@@ -1,6 +1,9 @@
 {
     "terminal.integrated.env.linux": {
-        "PATH": "/home/jch/.platformio/penv/bin:/home/jch/.platformio/penv:/usr/local/bin:/usr/bin:/bin:/usr/local/games:/usr/games:/sbin:/usr/sbin:/snap/bin",
+        "PATH": "/home/jpmeijers/.platformio/penv/bin:/home/jpmeijers/.platformio/penv:/home/jpmeijers/bin:/home/jpmeijers/.local/bin:/home/jpmeijers/bin:/home/jpmeijers/.local/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin:/home/jpmeijers/Android/Sdk/tools:/home/jpmeijers/Android/Sdk/platform-tools",
         "PLATFORMIO_CALLER": "vscode"
+    },
+    "files.associations": {
+        "region.h": "c"
     }
 }
