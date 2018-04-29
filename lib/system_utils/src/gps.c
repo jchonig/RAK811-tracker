@@ -211,12 +211,12 @@ uint8_t GpsGetLatestGpsPositionBinary( int32_t *latiBin, int32_t *longiBin )
     return status;
 }
 
-int8_t GpsGetLatestGpsHorizontalDilution (void)
+double GpsGetLatestGpsHorizontalDilution (void)
 {
     BoardDisableIrq( );
     if( HasFix == true )
     {    
-        Hdop = atoi( NmeaGpsData.NmeaHorizontalDilution );
+        Hdop = atof( NmeaGpsData.NmeaHorizontalDilution );
     }
     else
     {

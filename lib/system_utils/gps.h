@@ -136,7 +136,7 @@ int16_t GpsGetLatestGpsAltitude( void );
  *
  * \retval hdop
  */
-int8_t GpsGetLatestGpsHorizontalDilution ( void );
+double GpsGetLatestGpsHorizontalDilution ( void );
 
 
 /*!
