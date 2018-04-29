@@ -8,7 +8,7 @@ To use this sketch to contribute to TTN Mapper, create a dedicated mapping appli
 
 After you programmed the device and you see data arriving on the TTN Console, you can add a payload decoder function. Use the code inside `decoder.js` for this. If you see that the coordinates from you devices under the Data tab and it is decoded sucessfully, you can simply enable the TTN Mapper integration.
 
-# Programming your RAK811
+# Instructions
 
 Install Platormio for either Microsoft Visual Studio Code, or Atom.
 
@@ -36,13 +36,21 @@ At the bottom of the Platformio window, there are a couple of small icons that w
 
 In the corner of the RAK811 GPS board there is a header pin you can set to two positions. The position closest to the corner is for porgramming mode, and the other position is normal mode in which your code executes. After changing the jumper position you have to either press the reset bottun next to the USB port, or power cycle the board.
 
-![alt text](https://raw.githubusercontent.com/username/projectname/branch/path/to/img.png)
+Programming mode:
+
+![Programming mode jumper position](https://raw.githubusercontent.com/jpmeijers/RAK811-tracker/master/RAK811-programming-mode.jpg)
+
+Code execution mode:
+
+![Normal code execution mode jumper position](https://raw.githubusercontent.com/jpmeijers/RAK811-tracker/master/RAK811-data-mode.jpg)
 
 Switch the jumper to the programming position and reset the board. Now in the Platformio terminal we used in the previous step, run the following command:
 
     stm32flash -e 254 -w .pioenvs/rak811/firmware.bin /dev/ttyUSB0
 
 The last part of that command is the name of the port to which the RAK module is connected on your computer. On Windows it will likely be something like COM3. On Ubuntu you can have to install the `stm32flash` via APT. Depending on your platform there will be different methods to obtain this utility. A copy of it is also included in the `stm32flash_src` folder in this repository.
+
+If the programming command succeeded, move the jumper back to the code execution position and press reset. Within seconds your device's data should be seen on the TTN Console.
 
 # Acknowledgements
 This code is possible thanks to the previous work done by @Ebiroll to program the RAK811 from Platformio. You can find his work here: https://github.com/Ebiroll/RAK811_BreakBoard
