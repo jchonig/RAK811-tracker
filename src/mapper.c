@@ -316,6 +316,9 @@ static void PrepareTxFrame(uint8_t port) {
 	default:
 		break;
 	}
+
+	printf("PrepareTxFrame(%d): ", AppPort);
+	dump_hex2str(AppData, AppDataSize);
 }
 
 /*!
@@ -643,6 +646,7 @@ static void MlmeConfirm(MlmeConfirm_t *mlmeConfirm) {
 		} else {
 			// Join was not successful. Try to join again
 			DeviceState = DEVICE_STATE_JOIN;
+			printf("OTAA Join Failed: %d \r\n", mlmeConfirm->Status);
 		}
 		break;
 	}
@@ -769,8 +773,10 @@ int main(void) {
 #endif
 
 			if (NextTx == true) {
-				LoRaMacMlmeRequest(&mlmeReq);
-				printf("OTAA Join Start... \r\n");
+				int rc = LoRaMacMlmeRequest(&mlmeReq);
+				printf("OTAA Join Start... %d\r\n", rc);
+				GpioWrite(&Led2, 0);
+				TimerStart(&Led2Timer);
 			}
 			DeviceState = DEVICE_STATE_SLEEP;
 
@@ -876,7 +882,7 @@ int main(void) {
 				LIS3DH_ReadReg(LIS3DH_OUT_X_L + index, AppData + 2 + index);
 				DelayMs(1);
 			}
-			//printf("[Debug]: ACC X:%04X Y:%04X Z:%04X\r\n", AppData[3]<<8 | AppData[2], AppData[5]<<8 | AppData[4], AppData[7]<<8 | AppData[6]);
+//			printf("[Debug]: ACC X:%04X Y:%04X Z:%04X\r\n", AppData[3]<<8 | AppData[2], AppData[5]<<8 | AppData[4], AppData[7]<<8 | AppData[6]);
 		}
 	}
 }
