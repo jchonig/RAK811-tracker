@@ -117,7 +117,19 @@ static uint32_t DevAddr = LORAWAN_DEVICE_ADDRESS;
 /*!
  * Application port
  */
-static uint8_t AppPort = LORAWAN_APP_PORT;
+/*!
+ * Application Ports
+ */
+static enum eAppPort {
+	APP_PORT_GPS = LORAWAN_APP_PORT,
+#ifdef	SEND_BATT
+	APP_PORT_BATT = LORAWAN_APP_PORT + 1,
+#endif
+#ifdef	SEND_ACCEL
+	APP_PORT_ACCEL = LORAWAN_APP_PORT + 2,
+#endif
+	APP_PORT_LIMIT
+} AppPort = APP_PORT_GPS;
 
 /*!
  * User application data size
@@ -207,30 +219,27 @@ static void PrepareTxFrame(uint8_t port) {
 	double latitude, longitude, hdopGps = 0;
 	int16_t altitudeGps = 0xFFFF;
 	uint8_t ret;
-	uint16_t bat;
 
 	switch (port) {
 		
-	case 2: {
+	case APP_PORT_GPS: {
 		ret = GpsGetLatestGpsPositionDouble(&latitude, &longitude);
 		altitudeGps = GpsGetLatestGpsAltitude(); // in m
 		hdopGps = GpsGetLatestGpsHorizontalDilution();
-		//printf("[Debug]: latitude: %f, longitude: %f , altitudeGps: %d \n", latitude, longitude, altitudeGps);
-		//printf("GpsGetLatestGpsPositionDouble ret = %d\r\n", ret);
-		uint32_t lat = ((latitude + 90) / 180.0) * 16777215;
-		uint32_t lon = ((longitude + 180) / 360.0) * 16777215;
-		uint16_t alt = altitudeGps;
-		uint8_t hdev = hdopGps * 10;
+		int32_t lat = ((latitude + 90) / 180.0) * 16777215;
+		int32_t lon = ((longitude + 180) / 360.0) * 16777215;
+		int16_t alt = altitudeGps;
+		int8_t hdev = hdopGps * 10;
 		
 		if (ret == SUCCESS) {
 
-			printf("Lat: %d Lon: %d, Alt: %d\r\n", (int)lat, (int)lon, alt);
+			printf("Lat: %X Lon: %X, Alt: %X HDOP %X\r\n", (int)lat, (int)lon, (int)alt, (int)hdev);
 
 			AppData[0] = lat >> 16;
 			AppData[1] = lat >> 8;
 			AppData[2] = lat;
 
-			AppData[3] = lon >> 16;;
+			AppData[3] = lon >> 16;
 			AppData[4] = lon >> 8;
 			AppData[5] = lon;
 
@@ -248,18 +257,20 @@ static void PrepareTxFrame(uint8_t port) {
 	}
 		break;
 
-		//cayenne LPP Temp
-	case 3: {
-		bat = BoardBatteryMeasureVolage();
+#ifdef	SEND_BATT
+		//Battery status
+	case APP_PORT_BATT: {
+		uint16_t bat = BoardBatteryMeasureVolage();
 		AppData[0] = (bat / 10) & 0xFF;
 		AppData[1] = ((bat / 10) >> 8) & 0xFF;
 		AppDataSize = 2;
 		printf("[Debug]: Bat: %dmv\r\n", bat);
 	}
 		break;
-
+#endif
+#ifdef	SEND_ACCEL
 		//cayenne LPP Acceleration
-	case 4: {
+	case APP_PORT_ACCEL: {
 
 		LIS3DH_ReadReg(LIS3DH_OUT_X_H, AppData + 0);
 		DelayMs(2);
@@ -280,7 +291,7 @@ static void PrepareTxFrame(uint8_t port) {
 				AppData[4] << 8 | AppData[5]);
 	}
 		break;
-
+#endif
 	case 224:
 		if (ComplianceTest.LinkCheck == true) {
 			ComplianceTest.LinkCheck = false;
@@ -500,7 +511,7 @@ static void McpsIndication(McpsIndication_t *mcpsIndication) {
 				switch (ComplianceTest.State) {
 				case 0: // Check compliance test disable command (ii)
 					IsTxConfirmed = LORAWAN_CONFIRMED_MSG_ON;
-					AppPort = LORAWAN_APP_PORT;
+					AppPort = APP_PORT_GPS;
 					AppDataSize = LORAWAN_APP_DATA_SIZE;
 					ComplianceTest.DownLinkCounter = 0;
 					ComplianceTest.Running = false;
@@ -548,7 +559,7 @@ static void McpsIndication(McpsIndication_t *mcpsIndication) {
 
 					// Disable TestMode and revert back to normal operation
 					IsTxConfirmed = LORAWAN_CONFIRMED_MSG_ON;
-					AppPort = LORAWAN_APP_PORT;
+					AppPort = APP_PORT_GPS;
 					AppDataSize = LORAWAN_APP_DATA_SIZE;
 					ComplianceTest.DownLinkCounter = 0;
 					ComplianceTest.Running = false;
@@ -706,6 +717,7 @@ int main(void) {
 			TimerInit(&Led2Timer, OnLed2TimerEvent);
 			TimerSetValue(&Led2Timer, 50);
 			TimerStart(&Led2Timer);
+
 			mibReq.Type = MIB_ADR;
 			mibReq.Param.AdrEnable = LORAWAN_ADR_ON;
 			LoRaMacMibSetRequestConfirm(&mibReq);
@@ -725,11 +737,11 @@ int main(void) {
 			//BoardGetUniqueId( DevEui );
 
 			printf("OTAA: \r\n");
-			printf("Dev_EUI: ");
+			printf("\tDev_EUI: ");
 			dump_hex2str(DevEui, 8);
-			printf("AppEui: ");
+			printf("\tAppEui: ");
 			dump_hex2str(AppEui, 8);
-			printf("AppKey: ");
+			printf("\tAppKey: ");
 			dump_hex2str(AppKey, 16);
 
 			mlmeReq.Type = MLME_JOIN;
@@ -815,12 +827,13 @@ int main(void) {
 				PrepareTxFrame(AppPort);
 
 				err = SendFrame();
+				GpioWrite(&Led2, 0);
+				TimerStart(&Led2Timer);
 				NextTx = err == LORAMAC_STATUS_OK;
 				printf("SendFrame: %d\r\n", err);
 				
-				AppPort++;
-				if (AppPort >= 5) {
-					AppPort = 2;
+				if (++AppPort >= APP_PORT_LIMIT) {
+					AppPort = APP_PORT_GPS;
 				}
 			}
 			if (ComplianceTest.Running == true) {
